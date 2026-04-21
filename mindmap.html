@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bản Đồ Tư Duy Tiết 2 - Thầy Long</title>
+    <style>
+        * { box-sizing: border-box; }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #021526; 
+            color: white;
+            overflow: hidden;
+        }
+
+        .header { position: fixed; top: 20px; left: 30px; z-index: 20; pointer-events: none; }
+        .header h1 { margin: 0; font-size: 2.5em; color: #FFD700; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
+        .header p { margin: 5px 0 0 0; font-size: 1.2em; color: #87CEEB; }
+
+        .settings-panel {
+            position: fixed; top: 20px; right: 30px; z-index: 20;
+            background: rgba(10, 30, 60, 0.9); border: 2px solid #4682B4;
+            padding: 15px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        .settings-panel h3 { margin: 0 0 10px 0; color: #00E5FF; font-size: 1em; text-align: center; }
+        .setting-group { margin-bottom: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .setting-group label { font-size: 0.8em; color: #ccc; }
+        .setting-group input, .setting-group select { padding: 5px; border-radius: 5px; font-size: 0.9em; }
+
+        .control-panel {
+            position: fixed; bottom: 20px; left: 30px; z-index: 20;
+            display: flex; gap: 15px;
+        }
+        
+        .main-btn {
+            padding: 12px 25px; color: white; border: 2px solid #fff; border-radius: 30px;
+            font-size: 1.1em; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: all 0.3s ease;
+        }
+        #music-btn { background: #D500F9; }
+        #music-btn.playing { background: #00E5FF; color: #000; animation: pulse 2s infinite; }
+        #slide-btn { background: #FF9100; }
+        #practice-btn { background: #32CD32; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(0, 229, 255, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+        }
+
+        #side-panel {
+            position: fixed; top: 0; right: -60vw; width: 60vw; height: 100vh;
+            background: #fff; z-index: 9990; box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+            transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex; flex-direction: column;
+        }
+        #side-panel.open { right: 0; }
+        .panel-header { background: #4C97FF; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .panel-header.slide-mode { background: #F4B400; }
+        .close-panel-btn { background: #FF3D00; border: 2px solid #fff; color: #fff; border-radius: 10px; padding: 5px 15px; cursor: pointer; }
+        #panel-iframe { width: 100%; height: 100%; border: none; }
+
+        #container { width: 100vw; height: 100vh; overflow: auto; cursor: grab; position: relative; padding: 150px; }
+        #container:active { cursor: grabbing; }
+        #svg-canvas { position: absolute; top: 0; left: 0; width: 4000px; height: 4000px; pointer-events: none; z-index: 1; }
+        .branch-line { fill: none; transition: all 0.3s ease; }
+
+        .tree-container { position: relative; z-index: 5; display: inline-block; }
+        ul { list-style: none; padding-left: 100px; position: relative; margin: 0; display: flex; flex-direction: column; gap: 20px; }
+        ul.root-ul { padding-left: 0; }
+        li { position: relative; display: flex; align-items: center; }
+
+        .node {
+            position: relative; display: inline-flex; align-items: center;
+            padding: 12px 25px; background: #112A46; border: 2px solid #fff;
+            border-radius: 30px; font-size: 1.2em; font-weight: bold;
+            color: #fff; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: 0.2s; user-select: none;
+        }
+        .node:hover { transform: scale(1.05); border-color: #00E5FF; }
+        .node.root-node { background: #fff; color: #000; border: 4px solid #FFD700; font-size: 1.5em; }
+        
+        .collapsed > .children-list { display: none !important; }
+        .collapsed > .node { background: #4682B4; border-style: dashed; opacity: 0.8; }
+
+        .btn-video { margin-left: 15px; padding: 6px 12px; background: #FF3D00; border: 2px solid #fff; border-radius: 20px; color: white; font-weight: bold; font-size: 0.8em; cursor: pointer; }
+
+        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; transition: 0.3s; }
+        .modal.show { display: flex; }
+        .modal-content { max-width: 80%; max-height: 80vh; border: 3px solid #00e676; border-radius: 15px; }
+        .close-btn { position: absolute; top: 20px; right: 40px; color: #fff; font-size: 50px; cursor: pointer; }
+
+        /* --- HIỆU ỨNG KARAOKE --- */
+        #karaoke-container {
+            position: fixed;
+            bottom: 80px; 
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(2, 21, 38, 0.85);
+            padding: 20px 40px;
+            border-radius: 50px;
+            border: 3px solid #00E5FF;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.6);
+            text-align: center;
+            opacity: 0; 
+            visibility: hidden;
+            transition: all 0.5s ease;
+            pointer-events: none; 
+            /* Căn rộng hết cỡ */
+            width: 95vw; 
+            max-width: 1500px;
+        }
+
+        #karaoke-container.show {
+            opacity: 1;
+            visibility: visible;
+            bottom: 90px; 
+        }
+
+        #karaoke-text {
+            /* Dùng vw để chữ tự động to vừa bằng chiều ngang màn chiếu */
+            font-size: 4.5vw; 
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 4px 4px 8px #000;
+            margin: 0;
+            line-height: 1.3;
+            transition: color 0.2s ease; 
+        }
+
+        /* Đảm bảo trên màn hình quá khổ (như 4K) chữ không bị to lố */
+        @media (min-width: 1400px) {
+            #karaoke-text { font-size: 60px; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" src="./chuca.mp3"></audio>
+
+    <div id="karaoke-container">
+        <p id="karaoke-text">🎵 Sẵn sàng chưa các bạn nhỏ... 🎵</p>
+    </div>
+
+    <div class="header">
+        <h1>BẢN ĐỒ TIẾT HỌC 🗺️</h1>
+        <p>Lớp 4.6 - Thầy Vũ Thế Long</p>
+    </div>
+
+    <div class="control-panel">
+        <button id="music-btn" class="main-btn" onclick="toggleMusic()">🎵 Bật Nhạc</button>
+        <button id="slide-btn" class="main-btn" onclick="openSidePanel('slide')">📽️ Mở Slide Bài Giảng</button>
+        <button id="practice-btn" class="main-btn" onclick="openSidePanel('scratch')">💻 Mở Thực hành Scratch</button>
+    </div>
+
+    <div class="settings-panel">
+        <h3>⚙️ Nhánh</h3>
+        <div class="setting-group">
+            <input type="color" id="lineColor" value="#00e5ff" onchange="drawLines()">
+        </div>
+        <div class="setting-group">
+            <select id="lineStyle" onchange="drawLines()">
+                <option value="solid">Nét liền</option>
+                <option value="dashed">Nét đứt</option>
+                <option value="dotted">Caro/Chấm</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="side-panel">
+        <div class="panel-header" id="panel-header">
+            <span id="panel-title">Môi trường Scratch</span>
+            <button class="close-panel-btn" onclick="closeSidePanel()">✖ Đóng</button>
+        </div>
+        <iframe id="panel-iframe" src="" allowfullscreen></iframe>
+    </div>
+
+    <div id="container">
+        <svg id="svg-canvas"></svg>
+        <div class="tree-container">
+            <ul class="root-ul">
+                <li class="parent-li">
+                    <div class="node root-node" onclick="toggleNode(this)">🌟 ĐẠI DƯƠNG KỲ THÚ</div>
+                    <ul class="children-list">
+                        <li class="parent-li collapsed">
+                            <div class="node" onclick="toggleNode(this)">1. Khởi động 👋</div>
+                            <ul class="children-list">
+                                <li><div class="node leaf">🗑️ Xóa Bọ cánh cứng <button class="btn-video" onclick="openVideo('./video/01.mp4', event)">▶ Xem</button></div></li>
+                                <li><div class="node leaf">🐟 Thêm bạn Cá (Fish) <button class="btn-video" onclick="openVideo('./video/02.mp4', event)">▶ Xem</button></div></li>
+                            </ul>
+                        </li>
+                        <li class="parent-li collapsed">
+                            <div class="node" onclick="toggleNode(this)">2. Khám phá Sân khấu 💧</div>
+                            <ul class="children-list">
+                                <li><div class="node leaf">🖼️ Chọn một phông nền <button class="btn-video" onclick="openVideo('./video/03.mp4', event)">▶ Xem</button></div></li>
+                                <li><div class="node leaf">🌊 Chủ đề: Dưới nước <button class="btn-video" onclick="openVideo('./video/04.mp4', event)">▶ Xem</button></div></li>
+                            </ul>
+                        </li>
+                        <li class="parent-li collapsed">
+                            <div class="node" onclick="toggleNode(this)">3. Hành trình bơi lội 🚀</div>
+                            <ul class="children-list">
+                                <li><div class="node leaf">🏁 Khi bấm vào cờ xanh <button class="btn-video" onclick="openVideo('./video/05.mp4', event)">▶ Xem</button></div></li>
+                                <li><div class="node leaf">🔄 Liên tục <button class="btn-video" onclick="openVideo('./video/06.mp4', event)">▶ Xem</button></div></li>
+                                <li><div class="node leaf">🏃 Di chuyển 10 bước <button class="btn-video" onclick="openVideo('./video/07.mp4', event)">▶ Xem</button></div></li>
+                            </ul>
+                        </li>
+                        <li class="parent-li collapsed">
+                            <div class="node" onclick="toggleNode(this)">4. Chữa bệnh cho Cá 🩺</div>
+                            <ul class="children-list">
+                                <li class="parent-li collapsed">
+                                    <div class="node" onclick="toggleNode(this)">💥 Lỗi đụng tường</div>
+                                    <ul class="children-list">
+                                        <li><div class="node leaf">🧱 Bật lại nếu chạm cạnh <button class="btn-video" onclick="openVideo('./video/08.mp4', event)">▶ Xem</button></div></li>
+                                        <li><div class="node leaf">👉 Đặt TRONG khối Liên tục <button class="btn-video" onclick="openVideo('./video/09.mp4', event)">▶ Xem</button></div></li>
+                                    </ul>
+                                </li>
+                                <li class="parent-li collapsed">
+                                    <div class="node" onclick="toggleNode(this)">🙃 Lỗi bơi ngửa</div>
+                                    <ul class="children-list">
+                                        <li><div class="node leaf">↔️ Kiểu xoay trái-phải <button class="btn-video" onclick="openVideo('./video/10.mp4', event)">▶ Xem</button></div></li>
+                                        <li><div class="node leaf">👉 Đặt TRÊN khối Liên tục <button class="btn-video" onclick="openVideo('./video/11.mp4', event)">▶ Xem</button></div></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="parent-li collapsed">
+                            <div class="node" onclick="toggleNode(this)">5. Thử thách 🎬</div>
+                            <ul class="children-list">
+                                <li><div class="node leaf">⚡ Đổi tốc độ bơi <button class="btn-video" onclick="openVideo('./video/12.mp4', event)">▶ Xem</button></div></li>
+                                <li><div class="node leaf">🦀 Thêm nhân vật mới <button class="btn-video" onclick="openVideo('./video/13.mp4', event)">▶ Xem</button></div></li>
+                                <li><div class="node leaf">💾 Lưu bài về máy tính <button class="btn-video" onclick="openVideo('./video/14.mp4', event)">▶ Xem</button></div></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="videoModal" class="modal" onclick="closeModal(event)">
+        <span class="close-btn" onclick="closeModal(event)">&times;</span>
+        <video id="modalVideo" class="modal-content" controls autoplay loop></video>
+    </div>
+
+    <script>
+        const GOOGLE_SLIDES_URL = "https://docs.google.com/presentation/d/e/2PACX-1vQhD9k99h7u10uIe7188XzG0k6i/embed?start=false&loop=false&delayms=3000"; 
+        const SCRATCH_URL = "https://xcratch.github.io/editor/";
+
+        const music = document.getElementById('bg-music');
+        const musicBtn = document.getElementById('music-btn');
+        const karaokeContainer = document.getElementById('karaoke-container'); 
+        const karaokeText = document.getElementById('karaoke-text');
+
+        const lyricsData = [
+            { time: 2.1, text: "🎵 Sẵn sàng chưa các bạn nhỏ..." },
+            { time: 4.2, text: "Cùng lập trình chú cá nhé! 🐟" },
+            { time: 7.5, text: "Mở Scratch ra, đu đu đu đu đu" },
+            { time: 12.1, text: "Kéo lên nào, đu đu đu đu đu 🖱️" },
+            { time: 14.1, text: "Chú cá bơi ngang, qua trái, qua phải" },
+            { time: 17.0, text: "Nhấp một cái thôi là vui ngay ✨" },
+            { time: 20.5, text: "Ghép từng khối màu là xong một phép màu" },
+            { time: 24.1, text: "Bấm chạy lên nào, xem chú cá lắc đầu 😆" },
+            { time: 29.8, text: "Chú cá ơi bơi lên nào 🌊" },
+            { time: 32.6, text: "Chú cá ơi quay vòng nào 🔄" },
+            { time: 35.0, text: "Kéo đúng khối mình làm được rồi" },
+            { time: 37.7, text: "Chú cá bơi vui cả lớp cười tươi 🥰" },
+            { time: 40.2, text: "Thêm một lần nữa, chú cá nháy mắt 😉" },
+            { time: 44.6, text: "Chạm vào quả sao là cộng thêm điểm thật ⭐" },
+            { time: 46.5, text: "Sai cũng đừng lo, xóa đi rồi làm lại 🗑️" },
+            { time: 49.0, text: "Từng bước nhỏ thôi mà giỏi cực thôi 🚀" },
+            { time: 52.6, text: "Ghép từng khối màu là xong một phép màu" },
+            { time: 56.4, text: "Bấm chạy lên nào, xem chú cá lắc đầu 😆" },
+            { time: 62.4, text: "Chú cá ơi bơi lên nào 🌊" },
+            { time: 65.4, text: "Chú cá ơi quay vòng nào 🔄" },
+            { time: 68.0, text: "Kéo đúng khối mình làm được rồi" },
+            { time: 70.6, text: "Chú cá bơi vui cả lớp cười tươi 🥰" },
+            { time: 73.6, text: "Mình cùng thử lại đúng ngay từ lần này 🎯" },
+            { time: 78.2, text: "Một cú bấm thôi, cả màn hình lung linh ✨" },
+            { time: 83.5, text: "Chú cá ơi bơi lên nào 🌊" },
+            { time: 85.8, text: "Chú cá ơi quay vòng nào 🔄" },
+            { time: 88.3, text: "Kéo đúng khối mình làm được rồi" },
+            { time: 90.8, text: "Chú cá bơi vui cả lớp cười tươi 🥰" },
+            { time: 93.5, text: "Chú cá ơi bơi lên nào 🌊" },
+            { time: 96.0, text: "Chú cá ơi quay vòng nào 🔄" },
+            { time: 98.3, text: "Kéo đúng khối mình làm được rồi" },
+            { time: 101.0, text: "Chú cá bơi vui cả lớp cười tươi 🥰" },
+            { time: 105.0, text: "🎵... (Kết thúc) ...🎵" }
+        ];
+
+        function toggleMusic() {
+            if (music.paused) { 
+                music.play(); 
+                musicBtn.innerHTML = '⏸️ Dừng Nhạc'; 
+                musicBtn.classList.add('playing'); 
+                karaokeContainer.classList.add('show');
+            }
+            else { 
+                music.pause(); 
+                musicBtn.innerHTML = '🎵 Bật Nhạc'; 
+                musicBtn.classList.remove('playing'); 
+                karaokeContainer.classList.remove('show');
+            }
+        }
+
+        // Tự động tắt và dọn dẹp khi hết nhạc
+        music.addEventListener('ended', () => {
+            music.currentTime = 0; // Trả nhạc về từ đầu
+            musicBtn.innerHTML = '🎵 Bật Nhạc'; 
+            musicBtn.classList.remove('playing'); 
+            karaokeContainer.classList.remove('show'); // Ẩn khung chữ
+            karaokeText.innerText = "🎵 Sẵn sàng chưa các bạn nhỏ... 🎵"; // Reset lời bài hát về câu đầu
+        });
+
+        // Logic tự động cập nhật Karaoke
+        music.addEventListener('timeupdate', () => {
+            const currentTime = music.currentTime;
+            
+            let currentLine = "🎵 Sẵn sàng chưa các bạn nhỏ... 🎵";
+            for (let i = 0; i < lyricsData.length; i++) {
+                if (currentTime >= lyricsData[i].time) {
+                    currentLine = lyricsData[i].text;
+                } else {
+                    break;
+                }
+            }
+
+            if (karaokeText.innerText !== currentLine) {
+                karaokeText.innerText = currentLine;
+            }
+        });
+
+        const sidePanel = document.getElementById('side-panel');
+        const panelHeader = document.getElementById('panel-header');
+        const panelTitle = document.getElementById('panel-title');
+        const panelIframe = document.getElementById('panel-iframe');
+
+        function openSidePanel(mode) {
+            if (mode === 'scratch') { panelTitle.innerText = "😸 Lập trình Scratch"; panelHeader.classList.remove('slide-mode'); panelIframe.src = SCRATCH_URL; }
+            else { panelTitle.innerText = "📽️ Slide Bài Giảng"; panelHeader.classList.add('slide-mode'); panelIframe.src = GOOGLE_SLIDES_URL; }
+            sidePanel.classList.add('open');
+        }
+
+        function closeSidePanel() { sidePanel.classList.remove('open'); setTimeout(() => { panelIframe.src = ""; }, 400); }
+
+        const container = document.getElementById('container');
+        const svgCanvas = document.getElementById('svg-canvas');
+
+        function drawLines() {
+            svgCanvas.innerHTML = ''; 
+            const color = document.getElementById('lineColor').value;
+            const style = document.getElementById('lineStyle').value;
+            let dash = "none"; if (style === "dashed") dash = "10, 10"; if (style === "dotted") dash = "2, 10";
+
+            document.querySelectorAll('.children-list').forEach(ul => {
+                if (window.getComputedStyle(ul).display === 'none') return;
+                const parentNode = ul.parentElement.querySelector('.node');
+                const pPos = parentNode.getBoundingClientRect();
+                const cPos = container.getBoundingClientRect();
+                const startX = pPos.right - cPos.left + container.scrollLeft;
+                const startY = pPos.top - cPos.top + container.scrollTop + pPos.height/2;
+
+                ul.querySelectorAll(':scope > li > .node').forEach(childNode => {
+                    const chPos = childNode.getBoundingClientRect();
+                    const endX = chPos.left - cPos.left + container.scrollLeft;
+                    const endY = chPos.top - cPos.top + container.scrollTop + chPos.height/2;
+                    const cp = (endX - startX) / 2;
+                    const d = `M ${startX} ${startY} C ${startX + cp} ${startY}, ${endX - cp} ${endY}, ${endX} ${endY}`;
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', d);
+                    path.setAttribute('class', 'branch-line');
+                    path.style.stroke = color; path.style.strokeWidth = "3"; path.style.strokeDasharray = dash; path.style.strokeLinecap = "round";
+                    svgCanvas.appendChild(path);
+                });
+            });
+        }
+
+        function toggleNode(element) {
+            element.parentElement.classList.toggle('collapsed');
+            element.classList.toggle('collapsed-node');
+            setTimeout(drawLines, 50);
+        }
+
+        window.addEventListener('load', () => { drawLines(); container.scrollLeft = 0; });
+        window.addEventListener('resize', drawLines);
+
+        const modal = document.getElementById("videoModal");
+        const modalVideo = document.getElementById("modalVideo");
+        function openVideo(src, e) { e.stopPropagation(); if (!music.paused) toggleMusic(); modalVideo.src = src; modal.classList.add("show"); }
+        function closeModal(e) { if(e.target === modal || e.target.className === "close-btn") { modal.classList.remove("show"); modalVideo.pause(); modalVideo.src = ""; } }
+
+        let isDown = false, startX, startY, scrollLeft, scrollTop;
+        container.onmousedown = (e) => { if(e.target.closest('.node') || e.target.closest('button')) return; isDown = true; startX = e.pageX - container.offsetLeft; startY = e.pageY - container.offsetTop; scrollLeft = container.scrollLeft; scrollTop = container.scrollTop; };
+        container.onmouseup = () => isDown = false;
+        container.onmousemove = (e) => { if(!isDown) return; e.preventDefault(); const x = e.pageX - container.offsetLeft; const y = e.pageY - container.offsetTop; container.scrollLeft = scrollLeft - (x - startX); container.scrollTop = scrollTop - (y - startY); drawLines(); };
+    </script>
+</body>
+</html>
